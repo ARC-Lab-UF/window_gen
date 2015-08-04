@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Window Gen : A Parallel Sliding-Window Generator for High-Performance Digital-Signal Processing on FPGAs">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Window Gen</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/ARC-Lab-UF/window_gen">View on GitHub</a>
+
+          <h1 id="project_title">Window Gen</h1>
+          <h2 id="project_tagline">A Parallel Sliding-Window Generator for High-Performance Digital-Signal Processing on FPGAs</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/ARC-Lab-UF/window_gen/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/ARC-Lab-UF/window_gen/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h3>
+<a id="summary" class="anchor" href="#summary" aria-hidden="true"><span class="octicon octicon-link"></span></a>Summary</h3>
+
+<p>This project provides a highly configurable, portable, open-source (VHDL) sliding-window generator. The VHDL entity includes configuration options for image sizes, window sizes, data width, number of parallel windows, among others (see documentation). The image and window sizes can also be changed dynamically. Given an input image, the window generator will create a set of output windows that correspond to "sliding" the window across the image. This type of operation is common in many signal-processing applications (e.g., convolution). One of the main contributions of this project is support for any number of parallel windows.</p>
+
+<p>This project provides the VHDL source code associated with the paper:</p>
+
+<p><em>Greg Stitt, Eric Schwartz, Patrick Cooke. A Parallel Sliding-Window Generator for High-Performance Digital-Signal Processing on FPGAs, ACM Transactions on Reconfigurable Technology and Systems (TRETS): Special Issue on Reconfigurable Components with Source Code, <em>To Appear</em></em></p>
+
+<p><strong>If you use this code in a project, we would appreciate a reference to this paper.</strong></p>
+
+<h3>
+<a id="abstract" class="anchor" href="#abstract" aria-hidden="true"><span class="octicon octicon-link"></span></a>Abstract</h3>
+
+<p>Sliding-window applications, an important class of the digital-signal processing domain, are highly
+amenable to pipeline parallelism on field-programmable gate arrays (FPGAs). Although memory bandwidth
+often restricts parallelism for many applications, sliding-window applications can leverage custom buffers,
+referred to as sliding-window generators, that provide massive input bandwidth that far exceeds the capa-
+bilities of external memory. Previous work has introduced a variety of sliding-window generators, but those
+approaches typically generate at most one window per cycle, which significantly restricts parallelism. In this
+paper, we address this limitation with a parallel sliding-window generator that can generate a configurable
+number of windows every cycle. Although in practice the number of parallel windows is limited by memory
+bandwidth, we show that even with common bandwidth limitations, the presented generator enables near-
+linear speedups up to 16x faster than previous FPGA studies that generate a single window per cycle, which
+were already in some cases faster than graphics-processing units (GPUs) and microprocessors.</p>
+
+<h3>
+<a id="instructions" class="anchor" href="#instructions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Instructions</h3>
+
+<p>Please read the corresponding paper for usage instructions. The included README file also includes an explanation of the interface and configuration options.</p>
+
+<h3>
+<a id="license" class="anchor" href="#license" aria-hidden="true"><span class="octicon octicon-link"></span></a>License</h3>
+
+<p>This project is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+
+<p>window_gen is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Window Gen maintained by <a href="https://github.com/ARC-Lab-UF">ARC-Lab-UF</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

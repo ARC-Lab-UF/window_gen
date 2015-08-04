@@ -63,6 +63,16 @@ were already in some cases faster than graphics-processing units (GPUs) and micr
 <p>Please read the corresponding paper for usage instructions. The included README file also includes an explanation of the interface and configuration options.</p>
 
 <h3>
+<a id="planned-extenstions" class="anchor" href="#planned-extenstions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Planned Extenstions</h3>
+
+<ul>
+<li>Support for VHDL 2008. The entity requires 2D unconstrained arrays (images) of an unconstrained type (pixel widths), which are supported in earlier versions of VHDL. As a workaround, the current version converts these arrays into large 1D vectors, which require specialized code for indexing.</li>
+<li>Optimizations for specialized configuration options. For example, when generating a single window at a time, it is likely that some of the circuit can be eliminated. Similarly, when only using one image and/or window size, the functionality for dealing with different runtime sizes can be eliminated.</li>
+</ul>
+
+<p>Feel free to suggest extensions, or to commit them to the repository on your own. We hope for this entity to be widely used for FPGA-based signal-processing applications.</p>
+
+<h3>
 <a id="license" class="anchor" href="#license" aria-hidden="true"><span class="octicon octicon-link"></span></a>License</h3>
 
 <p>This project is free software: you can redistribute it and/or modify

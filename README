@@ -1,0 +1,336 @@
+For: A Parallel Sliding-Window Generator for High-Performance Digital-Signal Processing on FPGAs
+
+By:  Greg Stitt, University of Florida
+
+The corresponding code implements the circuit described in the following paper:
+Greg Stitt, Eric Schwartz, Patrick Cooke. A Parallel Sliding-Window Generator 
+for High-Performance Digital-Signal Processing on FPGAs. ACM Transactions of 
+Reconfigurable Technology and Systems: Special Issue on Reconfigurable 
+Components with Source Code. To Appear.
+
+If you use this code in a project, we would appreciate a reference to this paper.
+
+License Statement:  GPL Version 3
+---------------------------------
+Copyright (c) 2015 Greg Stitt, University of Florida
+
+This file is part of window_gen.
+
+window_gen is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+window_gen is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+For the details of the GNU General Public License, see the included
+gpl.txt file, or go to http://www.gnu.org/licenses/.
+
+
+Required Tools and Version Numbers:
+-----------------------------------
+ISE Design Suite (Tested in 13.0+)
+Quartus II (Tested in 10.1+)
+
+
+Overview of Files:
+------------------
+build.tcl - ise script that implements design
+isim.tcl  - isim script that runs the testbench simulation
+sim.prj   - ise project file used for simulation purposes
+makefile  - make file with the build and verify targets
+gpl.txt   - contains the gpl 3.0 license
+src/      - folder containing all of the source files
+build/    - folder created by makefile to hold compilation files
+sim/      - folder created by makefile to hold simulation files
+template/ - contains instructional example of how to use the window generator
+
+The 3 main components described in the paper are defined in the following files:
+Sliding-window Generator (top level) = src/window_gen.vhd
+Variable-Read FIFO = src/fifo_vr.vhd
+Window Buffer = src/wg_buffer.vhd
+Window Coalescer = src/wg_coalescer.vhd
+
+The testbench is provided at: src/window_gen_tb.vhd
+
+The other files are support entities for the window generator:
+src/window_gen_pkg.vhd - provides functions for accessing 2D arrays stored as a large std_logic_vector
+src/wg_fifo.vhd - A FIFO used by the window buffer (wg_buffer)
+src/wg_fifo_edge_control.vhd - Pointers for maintaining the front and back of an array of FIFOs in the window buffer (wg_buffer)
+src/wg_variable_delay.vhd - Delays a signal by a variable number of cycles
+src/math_custom.vhd - Provides a variety of useful math functions
+
+We have also included an instructional (but non-functional) template that demonstrates how to interface with the core:
+template/template.vhd
+
+Build Instructions:
+-------------------
+Run the command "make build". This should compile the core using XST, with the results in the "build" folder.
+
+Verification Instructions:
+--------------------------
+Run the command "make verify" and wait until the output indicates "SIMULATION DONE." 
+Associated simulation files should be generated in the "sim" folder.
+
+If you run into problems with this command, open any simulator, add the files in the src/
+folder to the project, and select window_gen_tb as the testbench.
+
+
+Engineering specification with functionality and all interfaces documented (intended for a technical user):
+-------------------------------------------------------------------------------------------------------------
+
+The top-level entity is in src/window_gen.vhd. Its configuration options and interface are described below.
+
+For resource utilization, please refer to Table III in the accompanying paper.
+
+For performance information, please refer to Section 5 of the accompanying paper.
+
+-------------------------------------------------------------------------------
+-- Generics Description
+-- PARALLEL_IO :  Specifies the number of inputs read at a time, in addition to
+--                the number of windows generated in parallel. The number of
+--                inputs and outputs has to be the same. It is not possible
+--                to generate more outputs than the number of provided inputs.
+--                If more inputs can be provided each cycle than the desired
+--                number of parallel window outputs, use a FIFO to stall the
+--                input stream.
+-- MAX_WINDOW_ROWS : The maximum number of rows in a generated window
+-- MAX_WINDOW_COLS : The maximum number of cols in a generated window
+-- MAX_IMAGE_ROWS : The maximum number of rows in an input image/stream
+-- MAX_IMAGE_COLS : The maximum number of cols in an input image/stream
+-- DATA_WIDTH : The width in bits of each element of the input stream.
+-- INPUT0_AT_MSB : Parallel inputs can be delivered with the first
+--                 input (INPUT0) at the MSB or the first input stored at
+--                 the LSB. e.g., for PARALLEL_IO = 4:
+--                 in0 & in1 & in2 & in3 (for INPUT0_AT_MSB = true)
+--                 or alternatively:
+--                 in3 & in2 & in1 & in0 (for INPUT0_AT_MSN = false)
+--                 If providing the input stream from a memory, it is likely
+--                 that false is an appropriate setting.
+--                 (default = false)
+-- BLOCK_EXTRA_INPUT : boolean that specifies whether or not the buffer should
+--                     prevent extra inputs from being stored by deasserting
+--                     the ready signal after reading all inputs. This
+--                     options simplifies the processing of multiple images
+--                     (e.g. video) because there is an period of time between
+--                     when the last pixel of an image enters the generator
+--                     and when the generator is ready to accept a new image.
+--                     If false, the user has to track the number of pixels in
+--                     the input stream to ensure that pixels from the next
+--                     image are not sent to the generator until the generator
+--                     has asserted done.
+--                     If true, the window generator simplifies
+--                     external logic because it will deassert ready after
+--                     reading the entire image, which will inform the user
+--                     that the generator is not ready for the next image.
+--                     We recommend setting this value to true, which simplies
+--                     control at the cost of  a small amount of logic and
+--                     a multiplier.
+--                     (default = true)
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- Port Descriptions (all control signals are active high)
+-- clk: Clock
+-- rst: Asynchronous reset
+-- go : Starts the generation of windows using the specified image and window
+--      sizes
+-- ready : Asserted by the generator to specify that it is ready to accept
+--         input. If the user asserts input_valid on a rising edge where ready
+--         is also asserted, then the generator will store that input and the
+--         user can move to the next input. Any inputs provided when ready is
+--         not asserted will not be stored into the generator. Therefore, the
+--         user should not move to the next output when ready = '0'.
+-- read_enable : The user should assert when reading a window(s) from the
+--               generator. There is no delay for a read. The window is
+--               already on the output port. This signal simply tells the
+--               buffer to generate the next window. In the case of
+--               PARALLEL_IO > 1, asserting read_enable reads PARALLEL_IO
+--               windows.
+-- empty : '1' when the buffer has at least one valid window, '0' otherwise
+-- image_rows : the number of rows in the input image. Must be <=
+--              MAX_IMAGE_ROWS and >= MAX_WINDOW_ROWS
+-- image_cols : the number of cols in the input image. Must be <=
+--              MAX_IMAGE_COLS and >= MAX_WINDOW_COLS
+-- window_rows : the number of rows in the generated window. Must be <=
+--               MAX_WINDOW_ROWS
+-- window_cols : the number of rows in the generated window. Must be <=
+--               MAX_WINDOW_COLS
+-- input : The current DATA_WIDTH-bit element of the input stream, or
+--         PARALLEL_IO inputs in the case of PARALLEL_IO > 1. Note that the
+--         order of parallel inputs can be configured with the INPUT0_AT_MSB
+--         option.
+-- input_valid : should be asserted by the user when "input" is valid. In the
+--               case of PARALLEL_IO > 1, this specifies that PARALLEL_IO
+--               inputs are valid.
+-- output : A generated window, or PARALLEL_IO windows when PARALLEL_IO > 1.
+--          The output always produces a maximum-sized window. When smaller
+--          windows are requested, ignore the elements outside the requested
+--          window. In the case of PARALLEL_IO > 1, the number of rows in the
+--          output is MAX_WINDOW_ROWS+PARALLEL_IO-1 to account for the multiple
+--          windows. The first window starts in column 0, the second in column
+--          1, etc. All windows start in row 0.
+--
+--          Note that the output is "vectorized" into a 1D vector to avoid
+--          limitations of pre-2008 VHDL. The top-left element of the first
+--          window (0,0) is stored in the highest bits of the vector. The rest
+--          of the elements appear in row-major order.
+--
+--          We have provided a basic template (template.vhd) to demonstrate
+--          how to more conveniently access the window outputs.
+-- window_valid : Specifies which of the PARALLEL_IO windows on the output
+--                signal are valid. When PARALLEL_IO > 1, there will be
+--                situations where some windows are invalid due to various
+--                situations (e.g., windows exceeding the current row of the
+--                image). The MSB corresponds to the earliest window (the one
+--                starting in column 0 of the output), and the LSB corresponds
+--                to the latest window (the one starting in column
+--                PARALLEL_IO-1 of the output)
+-- done : Asserted by the generator when all windows have been generated
+--        (but not read from the buffer). In other words, if there are less than
+--        PARALLEL_IO windows left to generate, and there are the same number
+--        of valid windows left in the buffer, done will be asserted.
+-------------------------------------------------------------------------------
+
+
+Customization Options and Instructions:
+---------------------------------------
+For customization options, see description of generics above.
+
+For instructions on how to use the core, see the accompanying paper. Also,
+we have provided a basic template (not functional by itself) that demonstrates
+how to interface the core with a memory and with replicated pipelines.
+See template/template.vhd.
+
+COMMON PROBLEMS:
+When targeting older Xilinx FPGAs, you may need to use a flag to force ISE to
+use the new parser. To do this, Put "-use_new_parser yes" in the synthesis 
+properties.
+
+The isim simulater causes a segmentation fault for some versions of ISE on some
+systems unless configured correctly. The following instructions should prevent 
+these segmentation faults (placeholders shown in parantheses, do not include the
+parentheses in actual usage):
+
+	git clone https://github.com/ARC-Lab-UF/window_gen
+	export LM_LICENSE_FILE=(PORT_NUMBER)@(LICENSE_SERVER) 
+	source (ISE_PATH)/settings64.sh
+	cd window_gen
+	make verify 
+	
+If there are still segmentation faults after following these instructions, you can run isim in the 
+GUI mode to avoid the problem.
+
+Description of Verification Suite:
+----------------------------------
+The provided testbench, window_gen_tb, tests window generation for the specified set of 
+generic values and checks to ensure that the output is correct. If successful, the simulation
+prints "SIMULATION DONE." If not successful, the simulation will print any errors and the
+time at which they occurred. To test different input configurations, change the generic values.
+Alternatively, the provided testbench can be instantiated from a larger verification suite to
+test multiple configurations simultanesouly.
+
+If you run into problems with the provided makefile, open any simulator, add the files in the src/
+folder to the project, and select window_gen_tb as the testbench. One common problem is that the 
+isim simulator causes a segmentation fault for some versions of ISE on some systems unless 
+configured correctly. The following instructions should prevent 
+these segmentation faults (placeholders shown in parantheses, do not include the
+parentheses in actual usage):
+
+	git clone https://github.com/ARC-Lab-UF/window_gen
+	export LM_LICENSE_FILE=(PORT_NUMBER)@(LICENSE_SERVER) 
+	source (ISE_PATH)/settings64.sh
+	cd window_gen
+	make verify 
+
+If there are still segmentation faults after following these instructions, you can run isim in the 
+GUI mode to avoid the problem.	
+
+Here is a complete list of all testbench options with corresponding descriptions:
+
+-- (WIDOW GENERATOR CONFIGRATION OPTIONS)
+-- PARALLEL_IO :  Specifies the number of inputs read at a time, in addition to
+--                the number of windows generated in parallel. The number of
+--                inputs and outputs has to be the same. It is not possible
+--                to generate more outputs than the number of provided inputs.
+--                If more inputs can be provided each cycle than the desired
+--                number of parallel window outputs, use a FIFO to stall the
+--                input stream.
+-- MAX_WINDOW_ROWS : The maximum number of rows in a generated window
+-- MAX_WINDOW_COLS : The maximum number of cols in a generated window
+-- MAX_IMAGE_ROWS : The maximum number of rows in an input image/stream
+-- MAX_IMAGE_COLS : The maximum number of cols in an input image/stream
+-- DATA_WIDTH : The width in bits of each element of the input stream.
+-- INPUT0_AT_MSB : Parallel inputs can be delivered with the first
+--                 input (INPUT0) at the MSB or the first input stored at
+--                 the LSB. e.g., for PARALLEL_IO = 4:
+--                 in0 & in1 & in2 & in3 (for INPUT0_AT_MSB = true)
+--                 or alternatively:
+--                 in3 & in2 & in1 & in0 (for INPUT0_AT_MSN = false)
+--                 If providing the input stream from a memory, it is likely
+--                 that INPUT0_AT_MSN is appropriate setting.
+--                 (default = false)
+-- BLOCK_EXTRA_INPUT : boolean that specifies whether or not the buffer should
+--                     prevent extra inputs from being stored by deasserting
+--                     the ready signal after reading all inputs. This
+--                     options simplifies the processing of multiple images
+--                     (e.g. video) because there is an period of time between
+--                     when the last pixel of an image enters the generator
+--                     and when the generator is ready to accept a new image.
+--                     If false, the user has to track the number of pixels in
+--                     the input stream to ensure that pixels from the next
+--                     image are not sent to the generator until the generator
+--                     has asserted done.
+--                     If true, the window generator simplifies
+--                     external logic because it will deassert ready after
+--                     reading the entire image, which will inform the user
+--                     that the generator is not ready for the next image.
+--                     We recommend setting this value to true, which simplies
+--                     control at the cost of  a small amount of logic and
+--                     a multiplier.
+--                     (default = true)
+--
+-- (ACTUAL INPUT SIZES)
+-- IROWS : the actual number of image rows for the simulation
+-- ICOLS : the actual number of image cols for the simulation
+-- WROWS : the actual number of window rows for the simulation
+-- WCOLS : the actual number of window cols for the simulation
+--
+-- (PARAMETERS FOR READ AND WRITE TIMINGS DURIGN SIMULATION)
+-- DELAY_PROP_WRITE : The probability of a write data (i.e. inputs) not being
+--                    available when the generator is ready.
+--                    Valid range: 0.0 to 1.0.
+-- MIN_RW_DELAY : When a write is delayed, this is the minimum number of cycles
+--                for the delay.
+-- MAX_RW_DELAY : When a write is delayed, this is the maximum number of cycles
+--                for the delay.
+-- DELAY_PROP_READ : The probability of a read being delay when output window
+--                   are available.
+--                   Valid range: 0.0 to 1.0.
+-- MIN_RD_DELAY : When a read is delayed, this is the minimum number of cycles
+--                for the delay.
+-- MAX_RD_DELAY : When a read is delayed, this is the maximum number of cycles
+--                for the delay.
+--
+-- (MISC SIMULATION PARAMETERS)
+-- CLK_PERIOD : The clock period used for the generator
+-- NUM_IMAGES : The number of images to test
+-- CHANGE_DIMENSION : If true, this will randomly select different image
+--                    dimensions for each image.
+--
+-- (DEBUGGING AND PERFORMANCE ANALYSIS)
+-- TEST_NAME : A string specifying the name of one instance of the testbench.
+--             Useful when instantiating this test within a larger set of tests.
+-- PRINT_STATUS : If true, enables reports during the simulation. Useful to
+--                determine the current point of the simulation.
+-- LOG_EN : It true, prints performance information to a log file.
+-- LOG_FILE : The name of the log file. Ignored if LOG_EN = false.
+
+
+Known Limitations:
+------------------
+The generator does not support windows larger than the input image.
+

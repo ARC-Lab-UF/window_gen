@@ -1,6 +1,6 @@
 For: A Parallel Sliding-Window Generator for High-Performance Digital-Signal Processing on FPGAs
 
-By:  Greg Stitt, University of Florida
+By:  Greg Stitt, Eric Schwartz, Patrick Cooke, University of Florida
 
 The corresponding code implements the circuit described in the following paper:
 Greg Stitt, Eric Schwartz, Patrick Cooke. A Parallel Sliding-Window Generator 
@@ -12,7 +12,7 @@ If you use this code in a project, we would appreciate a reference to this paper
 
 License Statement:  GPL Version 3
 ---------------------------------
-Copyright (c) 2015 Greg Stitt, University of Florida
+Copyright (c) 2015 University of Florida
 
 This file is part of window_gen.
 

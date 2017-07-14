@@ -59,7 +59,8 @@ use work.math_custom.all;
 entity wg_fifo is
     generic (
         DATA_WIDTH : positive;
-        ADDR_WIDTH : positive);
+        ADDR_WIDTH : positive;
+        SIZE_WIDTH : positive);
     port (
         clk        : in  std_logic;
         rst        : in  std_logic;
@@ -72,7 +73,7 @@ entity wg_fifo is
         rdata      : out std_logic_vector(DATA_WIDTH-1 downto 0);
         empty      : out std_logic;
         full       : out std_logic;
-        size       : in  std_logic_vector(ADDR_WIDTH-1 downto 0)
+        size       : in  std_logic_vector(SIZE_WIDTH-1 downto 0)
         );
 end wg_fifo;
 
@@ -81,8 +82,8 @@ architecture RTL of wg_fifo is
     signal front, next_front           : unsigned(ADDR_WIDTH-1 downto 0);
     signal back, next_back             : unsigned(ADDR_WIDTH-1 downto 0);
     signal read_ptr, next_read_ptr     : unsigned(ADDR_WIDTH-1 downto 0);
-    signal count, next_count           : unsigned(ADDR_WIDTH-1 downto 0);
-    signal read_count, next_read_count : unsigned(ADDR_WIDTH-1 downto 0);
+    signal count, next_count           : unsigned(SIZE_WIDTH-1 downto 0);
+    signal read_count, next_read_count : unsigned(SIZE_WIDTH-1 downto 0);
     signal wen_ram                     : std_logic;
     signal full_s                      : std_logic;
     signal empty_s                     : std_logic;
@@ -127,8 +128,8 @@ begin
     process (front, back, read_ptr, count, read_count,
              wen, ren, pop, read_reset,
              full_s, read_empty_s, empty_s)
-        variable temp_count      : unsigned(ADDR_WIDTH-1 downto 0);
-        variable temp_read_count : unsigned(ADDR_WIDTH-1 downto 0);
+        variable temp_count      : unsigned(SIZE_WIDTH-1 downto 0);
+        variable temp_read_count : unsigned(SIZE_WIDTH-1 downto 0);
     begin
 
         temp_count      := count;

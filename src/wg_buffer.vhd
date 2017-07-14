@@ -181,7 +181,8 @@ begin
         U_FIFO : entity work.wg_fifo
             generic map (
                 DATA_WIDTH => DATA_WIDTH*PARALLEL_IO,
-                ADDR_WIDTH => FIFO_ADDR_BITS)
+                ADDR_WIDTH => FIFO_ADDR_BITS,
+                SIZE_WIDTH => bitsNeeded(MAX_BUFFER_SIZE))
             port map (
                 clk        => clk,
                 rst        => rst,

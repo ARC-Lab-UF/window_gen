@@ -36,6 +36,7 @@ use work.math_custom.all;
 -- DATA_WIDTH : The width of each element in the FIFO.
 -- ADDR_WIDTH : The address width of the FIFO. This defines the number of
 --              maximum number of words in the FIFO as 2**ADDR_WIDTH.
+-- SIZE_WIDTH : The width of the size input.
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
